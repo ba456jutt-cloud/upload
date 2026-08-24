@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Git Push & YouTube Upload Web Assistant 🚀</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #090d16;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 25px 20px;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(147, 51, 234, 0.18) 0px, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 38px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        .header {
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .file-drop-area {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            border: 2px dashed rgba(56, 189, 248, 0.35);
+            border-radius: 14px;
+            background: rgba(30, 41, 59, 0.45);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-drop-area:hover {
+            border-color: #38bdf8;
+            background: rgba(30, 41, 59, 0.75);
+            transform: translateY(-1px);
+        }
+
+        .file-drop-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-msg {
+            font-size: 14px;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .file-msg strong {
+            color: #38bdf8;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 13px 18px;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            color: #f8fafc;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 95px;
+        }
+
+        .row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        button.btn-push {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+            border: none;
+            border-radius: 14px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 10px 20px -5px rgba(22, 163, 74, 0.4);
+        }
+
+        button.btn-push:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(22, 163, 74, 0.5);
+        }
+
+        button.btn-push:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status & Log Terminal Card */
+        .status-card {
+            margin-top: 25px;
+            padding: 22px;
+            border-radius: 14px;
+            background: #020617;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+
+        .status-card.active {
+            display: block;
+        }
+
+        .status-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .log-box {
+            font-family: monospace;
+            font-size: 12.5px;
+            color: #cbd5e1;
+            white-space: pre-wrap;
+            max-height: 160px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .success-box {
+            margin-top: 15px;
+            padding: 14px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            border-radius: 10px;
+            color: #4ade80;
+            font-size: 14px;
+            display: none;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🎬 Auto-Git Push & YouTube Uploader</h1>
+        <p>Select files, add metadata, auto-commit to GitHub, and let Cloud Actions publish on YouTube!</p>
+    </div>
+
+    <form id="autoPushForm" enctype="multipart/form-data">
+        <!-- 1. Video File Picker -->
+        <div class="form-group">
+            <label>📹 1. Select Video File (.mp4, .mkv, .mov)</label>
+            <div class="file-drop-area" id="videoDropArea">
+                <input type="file" name="video_file" id="videoFileInput" accept="video/*" required>
+                <div class="file-msg" id="videoFileMsg">
+                    <strong>Click to browse</strong> or drag & drop video file here
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Thumbnail Picker -->
+        <div class="form-group">
+            <label>🖼️ 2. Select Custom Thumbnail Image (.png, .jpg)</label>
+            <div class="file-drop-area" style="padding: 16px;">
+                <input type="file" name="thumbnail_file" id="thumbFileInput" accept="image/*">
+                <div class="file-msg" id="thumbFileMsg">
+                    <strong>Click to browse</strong> thumbnail image (PNG/JPG)
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Title -->
+        <div class="form-group">
+            <label>📌 3. Video Title</label>
+            <input type="text" name="title" id="titleInput" placeholder="Enter video title..." required>
+        </div>
+
+        <!-- 4. Description -->
+        <div class="form-group">
+            <label>📝 4. Video Description</label>
+            <textarea name="description" placeholder="Enter detailed description..."></textarea>
+        </div>
+
+        <!-- 5. Tags -->
+        <div class="form-group">
+            <label>🏷️ 5. Tags (Comma-separated)</label>
+            <input type="text" name="tags" value="Cybersecurity, AI, Python, Automation">
+        </div>
+
+        <!-- 6. Privacy & Category Row -->
+        <div class="row">
+            <div class="col form-group">
+                <label>🔒 Privacy Status</label>
+                <select name="privacy">
+                    <option value="public" selected>Public (Visible to all)</option>
+                    <option value="unlisted">Unlisted (Link only)</option>
+                    <option value="private">Private (Only you)</option>
+                </select>
+            </div>
+            <div class="col form-group">
+                <label>📂 Category</label>
+                <select name="category">
+                    <option value="28" selected>Science & Technology</option>
+                    <option value="27">Education</option>
+                    <option value="24">Entertainment</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-push" id="pushBtn">
+            🚀 AUTO-PUSH TO GITHUB (TRIGGER YOUTUBE UPLOAD)
+        </button>
+    </form>
+
+    <!-- Status Output Card -->
+    <div class="status-card" id="statusCard">
+        <div class="status-title">
+            <div class="spinner" id="spinner"></div>
+            <span id="statusHeading">Overwriting Previous Files & Auto-Pushing...</span>
+        </div>
+        <div class="log-box" id="logBox">Preparing files...</div>
+        <div class="success-box" id="successBox">
+            🎉 <strong>SUCCESS!</strong> Committed & Pushed to GitHub!<br>
+            🤖 GitHub Actions (US Cloud Server) is now automatically uploading your video to YouTube!
+        </div>
+    </div>
+</div>
+
+<script>
+    const videoInput = document.getElementById('videoFileInput');
+    const videoMsg = document.getElementById('videoFileMsg');
+    const thumbInput = document.getElementById('thumbFileInput');
+    const thumbMsg = document.getElementById('thumbFileMsg');
+    const titleInput = document.getElementById('titleInput');
+
+    videoInput.addEventListener('change', (e) => {
+        if (videoInput.files.length > 0) {
+            const fileName = videoInput.files[0].name;
+            videoMsg.innerHTML = `Selected Video: <strong>${fileName}</strong>`;
+            if (!titleInput.value) {
+                const defaultTitle = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+                titleInput.value = defaultTitle.charAt(0).toUpperCase() + defaultTitle.slice(1);
+            }
+        }
+    });
+
+    thumbInput.addEventListener('change', (e) => {
+        if (thumbInput.files.length > 0) {
+            thumbMsg.innerHTML = `Selected Thumbnail: <strong>${thumbInput.files[0].name}</strong>`;
+        }
+    });
+
+    // Form Submission
+    const autoPushForm = document.getElementById('autoPushForm');
+    const pushBtn = document.getElementById('pushBtn');
+    const statusCard = document.getElementById('statusCard');
+    const logBox = document.getElementById('logBox');
+    const spinner = document.getElementById('spinner');
+    const statusHeading = document.getElementById('statusHeading');
+    const successBox = document.getElementById('successBox');
+
+    autoPushForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        pushBtn.disabled = true;
+        pushBtn.innerText = "⏳ Auto-Pushing to GitHub...";
+
+        statusCard.classList.add('active');
+        spinner.style.display = "block";
+        statusHeading.innerText = "Cleaning Old Files, Saving Metadata & Pushing to GitHub...";
+        logBox.innerText = "[*] Overwriting previous video & thumbnail files...\n[*] Generating metadata/video_info.json...\n[*] Running git add, git commit, and git push...";
+        successBox.style.display = "none";
+
+        const formData = new FormData(autoPushForm);
+
+        try {
+            const response = await fetch('/auto-push', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                spinner.style.display = "none";
+                statusHeading.innerText = "🎉 Auto-Push Complete!";
+                logBox.innerText += `\n[+] ${data.message}\n[+] Commit: "${data.commit_msg}"`;
+                successBox.style.display = "block";
+            } else {
+                spinner.style.display = "none";
+                statusHeading.innerText = "❌ Push Failed";
+                logBox.innerText += `\n[-] Error: ${data.message}`;
+            }
+        } catch (err) {
+            spinner.style.display = "none";
+            statusHeading.innerText = "❌ Request Error";
+            logBox.innerText += `\n[-] Request error: ${err.message}`;
+        } finally {
+            pushBtn.disabled = false;
+            pushBtn.innerText = "🚀 AUTO-PUSH ANOTHER VIDEO";
+        }
+    });
+</script>
+
+</body>
+</html>

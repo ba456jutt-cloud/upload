@@ -1,9 +1,14 @@
 {
-  "video_filename": "my_video.mp4",
-  "title": "My Custom YouTube Video Title",
-  "description": "Here is the detailed description of my video.\n\nSubscribe for more content!",
-  "tags": ["Cybersecurity", "Python", "Automation", "Tutorial"],
-  "privacy_status": "public",
+  "video_filename": "input_videos/active_video.mp4",
+  "title": "Documentary 1783313916",
+  "description": "fffff",
+  "tags": [
+    "Cybersecurity",
+    "AI",
+    "Python",
+    "Automation"
+  ],
+  "privacy_status": "private",
   "category_id": "28",
-  "thumbnail_filename": "thumbnail.png"
+  "thumbnail_filename": "thumbnails/active_thumbnail.png"
 }

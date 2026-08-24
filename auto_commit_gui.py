@@ -99,7 +99,7 @@ class AutoGitPushGUI:
 
         # 4. Description Box
         ttk.Label(form_frame, text="📝 4. Video Description:").pack(anchor="w", pady=(12, 4))
-        self.desc_text = tk.Text(form_frame, height=4, bg="#1e293b", fg="#f8fafc", insertbackground="#ffffff", relief="flat", font=("Segoe UI", 9.5), wrap="word")
+        self.desc_text = tk.Text(form_frame, height=4, bg="#1e293b", fg="#f8fafc", insertbackground="#ffffff", relief="flat", font=("Segoe UI", 10), wrap="word")
         self.desc_text.pack(fill="x", ipady=4, ipadx=6)
 
         # 5. Tags Entry
@@ -128,7 +128,7 @@ class AutoGitPushGUI:
 
         # Output Log Window
         ttk.Label(form_frame, text="📊 Git Push & Action Progress Log:").pack(anchor="w", pady=(12, 4))
-        self.log_text = tk.Text(form_frame, height=5, bg="#020617", fg="#38bdf8", relief="flat", font=("Consolas", 8.5), wrap="word")
+        self.log_text = tk.Text(form_frame, height=5, bg="#020617", fg="#38bdf8", relief="flat", font=("Consolas", 9), wrap="word")
         self.log_text.pack(fill="both", expand=True)
 
         # Big Action Button
@@ -190,19 +190,37 @@ class AutoGitPushGUI:
 
     def _push_task(self, video_src: str, title: str):
         try:
-            # 1. Copy Video file into input_videos/
-            video_basename = os.path.basename(video_src)
-            dest_video_path = os.path.join(INPUT_VIDEOS_DIR, video_basename)
-            self.log(f"[*] Copying video file to input_videos/{video_basename}...")
+            # 0. Cleanup previous video files in input_videos/ to save disk space
+            for old_f in os.listdir(INPUT_VIDEOS_DIR):
+                if old_f != ".gitkeep":
+                    try:
+                        os.remove(os.path.join(INPUT_VIDEOS_DIR, old_f))
+                    except Exception:
+                        pass
+
+            # 0. Cleanup previous thumbnail files in thumbnails/ to save disk space
+            for old_f in os.listdir(THUMBNAILS_DIR):
+                if old_f != ".gitkeep":
+                    try:
+                        os.remove(os.path.join(THUMBNAILS_DIR, old_f))
+                    except Exception:
+                        pass
+
+            # 1. Copy Video file into input_videos/ (Overwriting previous video)
+            video_ext = os.path.splitext(video_src)[1] or ".mp4"
+            dest_video_name = f"active_video{video_ext}"
+            dest_video_path = os.path.join(INPUT_VIDEOS_DIR, dest_video_name)
+            self.log(f"[*] Copying new video file to input_videos/{dest_video_name} (overwriting previous)...")
             shutil.copy2(video_src, dest_video_path)
 
-            # 2. Copy Thumbnail file into thumbnails/ if selected
+            # 2. Copy Thumbnail file into thumbnails/ if selected (Overwriting previous thumbnail)
             thumb_src = self.thumb_entry.get().strip()
-            thumb_basename = ""
+            thumb_name = ""
             if thumb_src and os.path.exists(thumb_src):
-                thumb_basename = os.path.basename(thumb_src)
-                dest_thumb_path = os.path.join(THUMBNAILS_DIR, thumb_basename)
-                self.log(f"[*] Copying thumbnail image to thumbnails/{thumb_basename}...")
+                thumb_ext = os.path.splitext(thumb_src)[1] or ".png"
+                thumb_name = f"active_thumbnail{thumb_ext}"
+                dest_thumb_path = os.path.join(THUMBNAILS_DIR, thumb_name)
+                self.log(f"[*] Copying new thumbnail image to thumbnails/{thumb_name} (overwriting previous)...")
                 shutil.copy2(thumb_src, dest_thumb_path)
 
             # 3. Create metadata/video_info.json
@@ -213,13 +231,13 @@ class AutoGitPushGUI:
             category_id = self.category_var.get().split()[0]
 
             meta_data = {
-                "video_filename": f"input_videos/{video_basename}",
+                "video_filename": f"input_videos/{dest_video_name}",
                 "title": title,
                 "description": description,
                 "tags": tags,
                 "privacy_status": privacy,
                 "category_id": category_id,
-                "thumbnail_filename": f"thumbnails/{thumb_basename}" if thumb_basename else ""
+                "thumbnail_filename": f"thumbnails/{thumb_name}" if thumb_name else ""
             }
 
             meta_file_path = os.path.join(METADATA_DIR, "video_info.json")
