@@ -1,0 +1,14 @@
+# Security: Keep secrets local (GitHub Secrets will pass them in Cloud)
+.env
+client_secrets.json
+
+# Temporary uploads & cache
+uploads/
+downloads/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Virtual environment
+venv/
+.venv/

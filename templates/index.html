@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube API Auto-Uploader Agent 🚀</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #090d16;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(147, 51, 234, 0.15) 0px, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 680px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+
+        }
+
+        .file-drop-area {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+            border: 2px dashed rgba(56, 189, 248, 0.3);
+            border-radius: 12px;
+            background: rgba(30, 41, 59, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-drop-area:hover {
+            border-color: #38bdf8;
+            background: rgba(30, 41, 59, 0.7);
+        }
+
+        .file-drop-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-msg {
+            font-size: 14px;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .file-msg strong {
+            color: #38bdf8;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #f8fafc;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        button.btn-upload {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        }
+
+        button.btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(37, 99, 235, 0.5);
+        }
+
+        button.btn-upload:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status & Log Box */
+        .status-card {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            background: #020617;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: none;
+        }
+
+        .status-card.active {
+            display: block;
+        }
+
+        .status-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .log-box {
+            font-family: monospace;
+            font-size: 12px;
+            color: #cbd5e1;
+            white-space: pre-wrap;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .result-link {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            color: #4ade80;
+            font-size: 14px;
+            word-break: break-all;
+            display: none;
+        }
+
+        .result-link a {
+            color: #4ade80;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🚀 YouTube Auto-Uploader Agent</h1>
+        <p>Select your video, customize metadata, and publish directly to YouTube</p>
+    </div>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <!-- Video File Drop Zone -->
+        <div class="form-group">
+            <label>📹 1. Select Video File (.mp4, .mkv, .mov)</label>
+            <div class="file-drop-area" id="videoDropArea">
+                <input type="file" name="video_file" id="videoFileInput" accept="video/*" required>
+                <div class="file-msg" id="videoFileMsg">
+                    <strong>Click to browse</strong> or drag & drop video file here
+                </div>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <div class="form-group">
+            <label>📌 2. Video Title</label>
+            <input type="text" name="title" id="titleInput" placeholder="Enter custom video title..." required>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+            <label>📝 3. Video Description</label>
+            <textarea name="description" placeholder="Enter detailed description..."></textarea>
+        </div>
+
+        <!-- Tags -->
+        <div class="form-group">
+            <label>🏷️ 4. Tags (Comma-separated)</label>
+            <input type="text" name="tags" value="Cybersecurity, AI, Python, Automation">
+        </div>
+
+        <!-- Privacy & Category Row -->
+        <div class="row">
+            <div class="col form-group">
+                <label>🔒 Privacy Status</label>
+                <select name="privacy">
+                    <option value="public" selected>Public (Visible to all)</option>
+                    <option value="unlisted">Unlisted (Link only)</option>
+                    <option value="private">Private (Only you)</option>
+                </select>
+            </div>
+            <div class="col form-group">
+                <label>📂 Category</label>
+                <select name="category">
+                    <option value="28" selected>Science & Technology</option>
+                    <option value="27">Education</option>
+                    <option value="24">Entertainment</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Custom Thumbnail File Drop Zone -->
+        <div class="form-group">
+            <label>🖼️ 5. Custom Thumbnail Image (Optional)</label>
+            <div class="file-drop-area" style="padding: 15px;">
+                <input type="file" name="thumbnail_file" id="thumbFileInput" accept="image/*">
+                <div class="file-msg" id="thumbFileMsg">
+                    <strong>Click to browse</strong> thumbnail image (PNG/JPG)
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-upload" id="uploadBtn">
+            🚀 UPLOAD VIDEO TO YOUTUBE
+        </button>
+    </form>
+
+    <!-- Status & Output Terminal -->
+    <div class="status-card" id="statusCard">
+        <div class="status-title">
+            <div class="spinner" id="spinner"></div>
+            <span id="statusHeading">Uploading Video to YouTube...</span>
+        </div>
+        <div class="log-box" id="logBox">Initializing upload pipeline...</div>
+        <div class="result-link" id="resultLink">
+            🎉 Video Live Link: <a href="#" id="ytLink" target="_blank"></a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const videoInput = document.getElementById('videoFileInput');
+    const videoMsg = document.getElementById('videoFileMsg');
+    const thumbInput = document.getElementById('thumbFileInput');
+    const thumbMsg = document.getElementById('thumbFileMsg');
+    const titleInput = document.getElementById('titleInput');
+
+    videoInput.addEventListener('change', (e) => {
+        if (videoInput.files.length > 0) {
+            const fileName = videoInput.files[0].name;
+            videoMsg.innerHTML = `Selected Video: <strong>${fileName}</strong>`;
+            if (!titleInput.value) {
+                // Auto-fill title from filename
+                const defaultTitle = fileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+                titleInput.value = defaultTitle.charAt(0).toUpperCase() + defaultTitle.slice(1);
+            }
+        }
+    });
+
+    thumbInput.addEventListener('change', (e) => {
+        if (thumbInput.files.length > 0) {
+            thumbMsg.innerHTML = `Selected Thumbnail: <strong>${thumbInput.files[0].name}</strong>`;
+        }
+    });
+
+    // Form Submission Handling
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const statusCard = document.getElementById('statusCard');
+    const logBox = document.getElementById('logBox');
+    const spinner = document.getElementById('spinner');
+    const statusHeading = document.getElementById('statusHeading');
+    const resultLink = document.getElementById('resultLink');
+    const ytLink = document.getElementById('ytLink');
+
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        uploadBtn.disabled = true;
+        uploadBtn.innerText = "⏳ Uploading in Progress...";
+
+        statusCard.classList.add('active');
+        spinner.style.display = "block";
+        statusHeading.innerText = "Uploading Video File to YouTube API...";
+        logBox.innerText = "Connecting to YouTube Data API v3...\nStarting chunked resumable upload...";
+        resultLink.style.display = "none";
+
+        const formData = new FormData(uploadForm);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                spinner.style.display = "none";
+                statusHeading.innerText = "🎉 Video Upload Complete!";
+                logBox.innerText += `\n[+] Upload Complete! Video ID: ${data.video_id}\n[+] Video URL: ${data.video_url}`;
+                ytLink.href = data.video_url;
+                ytLink.innerText = data.video_url;
+                resultLink.style.display = "block";
+            } else {
+                spinner.style.display = "none";
+                statusHeading.innerText = "❌ Upload Failed";
+                logBox.innerText += `\n[-] Error: ${data.message}`;
+            }
+        } catch (err) {
+            spinner.style.display = "none";
+            statusHeading.innerText = "❌ Connection Error";
+            logBox.innerText += `\n[-] Request error: ${err.message}`;
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = "🚀 UPLOAD ANOTHER VIDEO";
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,67 @@
+name: Autonomous YouTube API Video Uploader Action
+
+on:
+  push:
+    paths:
+      - 'input_videos/**'
+      - 'thumbnails/**'
+      - 'metadata/**'
+  workflow_dispatch:
+    inputs:
+      video_filename:
+        description: 'Video Filename (inside input_videos/ e.g. input_videos/my_video.mp4)'
+        required: false
+        default: 'input_videos/my_video.mp4'
+      title:
+        description: 'YouTube Video Title (Leave empty to use metadata/video_info.json)'
+        required: false
+        default: ''
+      description:
+        description: 'YouTube Video Description'
+        required: false
+        default: ''
+      privacy_status:
+        description: 'Privacy Status (public, unlisted, private)'
+        required: false
+        default: 'public'
+      tags:
+        description: 'Comma-separated Tags'
+        required: false
+        default: 'Cybersecurity,Python,Automation'
+
+jobs:
+  upload-to-youtube:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Google YouTube API Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+
+      - name: Execute Autonomous YouTube Upload Agent
+        env:
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.title }}" ]; then
+            python youtube_manual_uploader.py \
+              --video "${{ github.event.inputs.video_filename }}" \
+              --title "${{ github.event.inputs.title }}" \
+              --description "${{ github.event.inputs.description }}" \
+              --privacy "${{ github.event.inputs.privacy_status }}" \
+              --tags "${{ github.event.inputs.tags }}"
+          else
+            python youtube_manual_uploader.py --metadata metadata/video_info.json
+          fi

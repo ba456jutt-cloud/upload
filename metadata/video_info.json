@@ -1,0 +1,9 @@
+{
+  "video_filename": "my_video.mp4",
+  "title": "My Custom YouTube Video Title",
+  "description": "Here is the detailed description of my video.\n\nSubscribe for more content!",
+  "tags": ["Cybersecurity", "Python", "Automation", "Tutorial"],
+  "privacy_status": "public",
+  "category_id": "28",
+  "thumbnail_filename": "thumbnail.png"
+}

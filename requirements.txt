@@ -1,0 +1,11 @@
+# Python Dependencies for Dedicated YouTube Manual API Uploader & GUI Assistant
+
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.1.0
+requests>=2.28.0
+yt-dlp>=2023.0.0
+python-dotenv>=1.0.0
+flask>=3.0.0
+werkzeug>=3.0.0
+pillow>=10.0.0

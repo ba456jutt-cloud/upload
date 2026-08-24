@@ -1,0 +1,5 @@
+# Git LFS (Large File Storage) tracking for video files up to 2 GB
+input_videos/* filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mkv filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
