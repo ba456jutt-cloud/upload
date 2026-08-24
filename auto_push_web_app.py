@@ -4,7 +4,7 @@ Glassmorphism Web Assistant: Auto-Git Push & YouTube Uploader
 ============================================================
 Runs a local Flask web server on http://localhost:5001 with a sleek HTML/CSS UI.
 Overwrites old video/thumbnail files to save disk space, generates metadata/video_info.json,
-and automatically runs 'git add', 'git commit', and 'git push'!
+and automatically runs 'git add', 'git commit', and 'git push' with saved GitHub Token!
 """
 
 import os
@@ -25,6 +25,15 @@ METADATA_DIR = os.path.join(PROJECT_DIR, "metadata")
 os.makedirs(INPUT_VIDEOS_DIR, exist_ok=True)
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 os.makedirs(METADATA_DIR, exist_ok=True)
+
+# Load .env file automatically
+env_file = os.path.join(PROJECT_DIR, ".env")
+if os.path.exists(env_file):
+    with open(env_file, "r") as f:
+        for line in f:
+            if line.strip() and not line.startswith("#") and "=" in line:
+                k, v = line.strip().split("=", 1)
+                os.environ[k.strip()] = v.strip()
 
 app = Flask(__name__, template_folder="templates")
 
@@ -108,7 +117,16 @@ def handle_auto_push():
         print(f"📌 Title: {title}")
         print("="*60)
 
-        # 7. Execute Git Commands
+        # 7. Configure GitHub Authenticated Remote URL if set in .env
+        gh_user = os.getenv("GITHUB_USERNAME", "").strip()
+        gh_token = os.getenv("GITHUB_TOKEN", "").strip()
+        gh_repo = os.getenv("GITHUB_REPO", "upload").strip()
+
+        if gh_user and gh_token and gh_token != "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN":
+            auth_remote_url = f"https://{gh_user}:{gh_token}@github.com/{gh_user}/{gh_repo}.git"
+            subprocess.run(["git", "remote", "set-url", "origin", auth_remote_url], cwd=PROJECT_DIR, check=False)
+
+        # 8. Execute Git Commands
         subprocess.run(["git", "add", "."], cwd=PROJECT_DIR, check=True)
         commit_msg = f"Auto-Upload Video: {title}"
         subprocess.run(["git", "commit", "-m", commit_msg], cwd=PROJECT_DIR, check=False)
@@ -135,10 +153,10 @@ def handle_auto_push():
 def main():
     port = 5001
     url = f"http://localhost:{port}"
-    print("======================================================")
+    print("="*60)
     print("🚀 AUTO-GIT PUSH HTML/CSS WEB APP RUNNING")
     print(f"🌐 Web Interface URL: {url}")
-    print("======================================================")
+    print("="*60)
 
     try:
         webbrowser.open(url)
