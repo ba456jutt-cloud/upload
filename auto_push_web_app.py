@@ -4,6 +4,7 @@ Glassmorphism Web Assistant: Auto-Git Push & YouTube Uploader
 ============================================================
 Runs a local Flask web server on http://localhost:5001 with a sleek HTML/CSS UI.
 Overwrites old video/thumbnail files to save disk space, generates metadata/video_info.json,
+increases Git HTTP postBuffer to 1GB to prevent RPC/curl errors on Windows/Linux,
 and automatically runs 'git add', 'git commit', and 'git push' with saved GitHub Token!
 """
 
@@ -111,27 +112,125 @@ def handle_auto_push():
         with open(meta_file_path, "w", encoding="utf-8") as f:
             json.dump(meta_data, f, indent=2)
 
+        # 6b. Auto-Restore Safeguard for .github/workflows/youtube_manual_upload.yml (Windows Hidden File Protection)
+        workflow_dir = os.path.join(PROJECT_DIR, ".github", "workflows")
+        workflow_file = os.path.join(workflow_dir, "youtube_manual_upload.yml")
+        os.makedirs(workflow_dir, exist_ok=True)
+        if not os.path.exists(workflow_file):
+            print("[*] Auto-Restoring missing .github/workflows/youtube_manual_upload.yml workflow file...")
+            workflow_content = """name: Autonomous YouTube API Video Uploader Action
+
+on:
+  push:
+    paths:
+      - 'input_videos/**'
+      - 'thumbnails/**'
+      - 'metadata/**'
+  workflow_dispatch:
+    inputs:
+      video_filename:
+        description: 'Video Filename'
+        required: false
+        default: 'input_videos/my_video.mp4'
+      title:
+        description: 'YouTube Video Title'
+        required: false
+        default: ''
+      description:
+        description: 'YouTube Video Description'
+        required: false
+        default: ''
+      privacy_status:
+        description: 'Privacy Status'
+        required: false
+        default: 'public'
+      tags:
+        description: 'Tags'
+        required: false
+        default: 'Cybersecurity,Python,Automation'
+
+jobs:
+  upload-to-youtube:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Google YouTube API Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+
+      - name: Execute Autonomous YouTube Upload Agent
+        env:
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.title }}" ]; then
+            python youtube_manual_uploader.py \\
+              --video "${{ github.event.inputs.video_filename }}" \\
+              --title "${{ github.event.inputs.title }}" \\
+              --description "${{ github.event.inputs.description }}" \\
+              --privacy "${{ github.event.inputs.privacy_status }}" \\
+              --tags "${{ github.event.inputs.tags }}"
+          else
+            python youtube_manual_uploader.py --metadata metadata/video_info.json
+          fi
+"""
+            with open(workflow_file, "w", encoding="utf-8") as wf:
+                wf.write(workflow_content)
+
         print("="*60)
-        print("🚀 WEB AGENT: EXECUTING GIT STAGING & AUTOMATED PUSH")
+        print("🚀 WEB AGENT: EXECUTING GIT CONFIG, STAGING & AUTOMATED PUSH")
         print(f"📌 Video: {saved_video_path}")
         print(f"📌 Title: {title}")
         print("="*60)
 
-        # 7. Configure GitHub Authenticated Remote URL if set in .env
-        gh_user = os.getenv("GITHUB_USERNAME", "").strip()
+        # 7. Auto-configure Git Buffer Size to 1GB to prevent RPC/curl 55 Send failure errors
+        subprocess.run(["git", "config", "http.postBuffer", "1048576000"], cwd=PROJECT_DIR, check=False)
+        subprocess.run(["git", "config", "http.maxRequestBuffer", "1048576000"], cwd=PROJECT_DIR, check=False)
+        subprocess.run(["git", "config", "core.compression", "0"], cwd=PROJECT_DIR, check=False)
+
+        # 8. Ensure Git Repository and Remote Destination are configured
+        if not os.path.exists(os.path.join(PROJECT_DIR, ".git")):
+            subprocess.run(["git", "init"], cwd=PROJECT_DIR, check=False)
+        
+        # Always rename current branch to 'main' on both Windows & Linux
+        subprocess.run(["git", "branch", "-M", "main"], cwd=PROJECT_DIR, check=False)
+
+        gh_user = os.getenv("GITHUB_USERNAME", "ba456jutt-cloud").strip()
         gh_token = os.getenv("GITHUB_TOKEN", "").strip()
         gh_repo = os.getenv("GITHUB_REPO", "upload").strip()
 
         if gh_user and gh_token and gh_token != "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN":
             auth_remote_url = f"https://{gh_user}:{gh_token}@github.com/{gh_user}/{gh_repo}.git"
-            subprocess.run(["git", "remote", "set-url", "origin", auth_remote_url], cwd=PROJECT_DIR, check=False)
+        else:
+            auth_remote_url = f"https://github.com/{gh_user}/{gh_repo}.git"
 
-        # 8. Execute Git Commands
+        # Add or update git remote origin
+        res_remote = subprocess.run(["git", "remote", "set-url", "origin", auth_remote_url], cwd=PROJECT_DIR, capture_output=True, text=True)
+        if res_remote.returncode != 0:
+            subprocess.run(["git", "remote", "add", "origin", auth_remote_url], cwd=PROJECT_DIR, check=False)
+
+        # 9. Execute Git Commands
         subprocess.run(["git", "add", "."], cwd=PROJECT_DIR, check=True)
         commit_msg = f"Auto-Upload Video: {title}"
         subprocess.run(["git", "commit", "-m", commit_msg], cwd=PROJECT_DIR, check=False)
 
-        push_res = subprocess.run(["git", "push"], cwd=PROJECT_DIR, capture_output=True, text=True)
+        # Explicitly push with upstream tracking
+        push_res = subprocess.run(["git", "push", "-u", "origin", "main"], cwd=PROJECT_DIR, capture_output=True, text=True)
+        if push_res.returncode != 0:
+            # Fallback for master or HEAD branch tracking
+            push_res = subprocess.run(["git", "push", "--set-upstream", "origin", "HEAD"], cwd=PROJECT_DIR, capture_output=True, text=True)
 
         if push_res.returncode == 0:
             return jsonify({
@@ -140,11 +239,12 @@ def handle_auto_push():
                 "commit_msg": commit_msg
             })
         else:
+            stderr_out = push_res.stderr or push_res.stdout or "Unknown git error"
+            print(f"[-] Git Push Error Output: {stderr_out}")
             return jsonify({
-                "status": "success",
-                "message": f"Files & metadata created! Git output: {push_res.stderr or push_res.stdout or 'Committed locally.'}",
-                "commit_msg": commit_msg
-            })
+                "status": "error",
+                "message": f"Git Push Failed: {stderr_out}"
+            }), 500
 
     except Exception as e:
         print(f"[-] Web Auto-Push Error: {e}")

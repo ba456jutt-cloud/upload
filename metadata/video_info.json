@@ -1,7 +1,7 @@
 {
   "video_filename": "input_videos/active_video.mp4",
-  "title": "final tet",
-  "description": "test",
+  "title": "last try",
+  "description": "vvvvv",
   "tags": [
     "Cybersecurity",
     "AI",
@@ -10,5 +10,5 @@
   ],
   "privacy_status": "private",
   "category_id": "28",
-  "thumbnail_filename": "thumbnails/active_thumbnail.png"
+  "thumbnail_filename": "thumbnails/active_thumbnail.jpg"
 }
