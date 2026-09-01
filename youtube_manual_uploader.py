@@ -22,12 +22,84 @@ if os.path.exists(env_file):
                 k, v = line.strip().split("=", 1)
                 os.environ[k.strip()] = v.strip()
 
+import re
+import requests
+import subprocess
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 
 CHUNK_SIZE = 10 * 1024 * 1024  # 10 MB resumable upload chunk size
+
+def download_video_if_url(video_input: str) -> str:
+    """If video_input is a Google Drive URL, File ID, or HTTP URL, downloads it to input_videos/cloud_video.mp4."""
+    if not video_input:
+        return video_input
+
+    # Check if input is a URL or Google Drive link/ID
+    is_url = video_input.startswith(("http://", "https://", "drive.google.com"))
+    is_drive_id = bool(re.match(r'^[a-zA-Z0-9_-]{28,45}$', video_input))
+
+    if not is_url and not is_drive_id and os.path.exists(video_input):
+        return video_input
+
+    out_file = os.path.join("input_videos", "cloud_video.mp4")
+    os.makedirs("input_videos", exist_ok=True)
+
+    # Google Drive extraction
+    file_id = video_input
+    if "drive.google.com" in video_input:
+        match = re.search(r'/d/([a-zA-Z0-9_-]+)', video_input) or re.search(r'id=([a-zA-Z0-9_-]+)', video_input)
+        if match:
+            file_id = match.group(1)
+            is_drive_id = True
+
+    if is_drive_id:
+        print(f"[*] Cloud Agent: Downloading 1GB+ video directly from Google Drive (ID: {file_id})...")
+        # Try gdown CLI
+        try:
+            cmd = ["gdown", f"https://drive.google.com/uc?id={file_id}", "-O", out_file, "--fuzzy"]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0 and os.path.exists(out_file) and os.path.getsize(out_file) > 10000:
+                print(f"[+] Google Drive Cloud Download Successful! ({os.path.getsize(out_file)/(1024*1024):.2f} MB)")
+                return out_file
+        except Exception:
+            pass
+
+        # Fallback to requests confirmation token download for large Google Drive files
+        URL = "https://docs.google.com/uc?export=download"
+        session = requests.Session()
+        response = session.get(URL, params={'id': file_id}, stream=True)
+        token = None
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                token = value
+                break
+        if token:
+            response = session.get(URL, params={'id': file_id, 'confirm': token}, stream=True)
+        if response.status_code == 200:
+            with open(out_file, "wb") as f:
+                for chunk in response.iter_content(chunk_size=1024*1024):
+                    if chunk:
+                        f.write(chunk)
+            if os.path.exists(out_file) and os.path.getsize(out_file) > 10000:
+                print(f"[+] Google Drive Direct Download Successful! ({os.path.getsize(out_file)/(1024*1024):.2f} MB)")
+                return out_file
+
+    # General HTTP / yt-dlp download fallback
+    if is_url:
+        print(f"[*] Cloud Agent: Downloading video URL: {video_input}...")
+        try:
+            cmd = ["yt-dlp", "-o", out_file, "--force-overwrites", video_input]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0 and os.path.exists(out_file) and os.path.getsize(out_file) > 10000:
+                print(f"[+] Web Video Download Successful! ({os.path.getsize(out_file)/(1024*1024):.2f} MB)")
+                return out_file
+        except Exception:
+            pass
+
+    return video_input
 
 class YouTubeManualUploaderAgent:
     """Standalone Agent for uploading custom user videos & metadata to YouTube."""
@@ -211,7 +283,7 @@ def main():
         try:
             with open(args.metadata, "r") as f:
                 meta = json.load(f)
-                video_file = video_file or meta.get("video_filename") or meta.get("video_path")
+                video_file = video_file or meta.get("video_filename") or meta.get("video_url") or meta.get("video_path")
                 title = title or meta.get("title")
                 description = description or meta.get("description")
                 tags = tags or meta.get("tags")
@@ -219,6 +291,10 @@ def main():
                 thumbnail = thumbnail or meta.get("thumbnail_filename") or meta.get("thumbnail_path")
         except Exception as e:
             print(f"[-] Error reading {args.metadata}: {e}")
+
+    # Check if video_file is a Google Drive URL/ID or Web URL and download directly in Cloud
+    if video_file:
+        video_file = download_video_if_url(video_file)
 
     # Fallback to searching input_videos/ directory if no video path specified
     if not video_file or not os.path.exists(video_file):

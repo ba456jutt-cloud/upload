@@ -236,11 +236,18 @@
         <div class="form-group">
             <label>📹 1. Select Video File (.mp4, .mkv, .mov)</label>
             <div class="file-drop-area" id="videoDropArea">
-                <input type="file" name="video_file" id="videoFileInput" accept="video/*" required>
+                <input type="file" name="video_file" id="videoFileInput" accept="video/*">
                 <div class="file-msg" id="videoFileMsg">
                     <strong>Click to browse</strong> or drag & drop video file here
                 </div>
             </div>
+        </div>
+
+        <!-- 1b. OR Google Drive / Web Video Link (Direct 0-MB Laptop Transfer) -->
+        <div class="form-group">
+            <label style="color: #38bdf8;">🌐 OR Paste Google Drive Link / File ID (Direct 0-MB Laptop Download!)</label>
+            <input type="text" name="video_url" id="videoUrlInput" placeholder="e.g. https://drive.google.com/file/d/1A2B3C4D.../view?usp=sharing">
+            <p style="font-size: 11.5px; color: #94a3b8; margin-top: 4px;">⚡ <strong>Fastest:</strong> If you paste a Google Drive link, 0-MB will be downloaded or uploaded on your local internet! GitHub Cloud Server will fetch it directly in 3 seconds!</p>
         </div>
 
         <!-- 2. Thumbnail Picker -->

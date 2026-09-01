@@ -45,12 +45,11 @@ def index():
 @app.route("/auto-push", methods=["POST"])
 def handle_auto_push():
     try:
-        if "video_file" not in request.files:
-            return jsonify({"status": "error", "message": "No video file provided"}), 400
+        video_url = request.form.get("video_url", "").strip()
+        video_file = request.files.get("video_file")
 
-        video_file = request.files["video_file"]
-        if not video_file or video_file.filename == "":
-            return jsonify({"status": "error", "message": "Selected video file is empty"}), 400
+        if not video_url and (not video_file or video_file.filename == ""):
+            return jsonify({"status": "error", "message": "Please select a local video file OR paste a Google Drive link!"}), 400
 
         # 1. Cleanup old video files in input_videos/ (save space!)
         for old_f in os.listdir(INPUT_VIDEOS_DIR):
@@ -68,12 +67,18 @@ def handle_auto_push():
                 except Exception:
                     pass
 
-        # 3. Save new video file (Overwriting active_video.mp4)
-        video_filename = secure_filename(video_file.filename)
-        video_ext = os.path.splitext(video_filename)[1] or ".mp4"
-        dest_video_name = f"active_video{video_ext}"
-        saved_video_path = os.path.join(INPUT_VIDEOS_DIR, dest_video_name)
-        video_file.save(saved_video_path)
+        dest_video_name = ""
+        saved_video_path = "Google Drive Link"
+
+        # 3. Save new video file if provided (Overwriting active_video.mp4)
+        if video_file and video_file.filename != "":
+            video_filename = secure_filename(video_file.filename)
+            video_ext = os.path.splitext(video_filename)[1] or ".mp4"
+            dest_video_name = f"active_video{video_ext}"
+            saved_video_path = os.path.join(INPUT_VIDEOS_DIR, dest_video_name)
+            video_file.save(saved_video_path)
+        else:
+            video_filename = "Google_Drive_Video"
 
         # 4. Save new thumbnail file if provided
         dest_thumb_name = ""
@@ -99,7 +104,8 @@ def handle_auto_push():
 
         # 6. Generate metadata/video_info.json
         meta_data = {
-            "video_filename": f"input_videos/{dest_video_name}",
+            "video_filename": f"input_videos/{dest_video_name}" if dest_video_name else "",
+            "video_url": video_url,
             "title": title,
             "description": description,
             "tags": tags,
