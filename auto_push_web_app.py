@@ -235,8 +235,8 @@ jobs:
         # Explicitly push with upstream tracking
         push_res = subprocess.run(["git", "push", "-u", "origin", "main"], cwd=PROJECT_DIR, capture_output=True, text=True)
         if push_res.returncode != 0:
-            # Fallback for master or HEAD branch tracking
-            push_res = subprocess.run(["git", "push", "--set-upstream", "origin", "HEAD"], cwd=PROJECT_DIR, capture_output=True, text=True)
+            # Fallback for force update
+            push_res = subprocess.run(["git", "push", "--force", "-u", "origin", "main"], cwd=PROJECT_DIR, capture_output=True, text=True)
 
         if push_res.returncode == 0:
             return jsonify({
